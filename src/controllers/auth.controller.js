@@ -19,6 +19,8 @@ const { validationResult } = require("express-validator");
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.MAIL_KEY);
 
+const nodemailer = require("nodemailer");
+
 export const signUp = async (req, res) => {
   try {
     // Getting the Request Body
@@ -46,7 +48,8 @@ export const signUp = async (req, res) => {
         {
         expiresIn: 86400, // 24 hours
       });
-*/
+*/    
+      console.log('aqui1 :>> ');
       const token = jwt.sign(
         {
           username: username,
@@ -59,6 +62,51 @@ export const signUp = async (req, res) => {
         });
 
 
+
+          
+        console.log('aqui2 :>> ');
+          // create reusable transporter object using the default SMTP transport
+            let transporter = await nodemailer.createTransport({
+              host: "smtp.gmail.com",
+              port: 465,
+              secure: true, // true for 465, false for other ports
+              auth: {
+                user: config.EMAIL_FROM, // generated ethereal user
+                pass: config.EMAIL_PASSAPP, // generated ethereal password
+              },
+            });
+
+            console.log('aqui3 :>> ',config.EMAIL_FROM);
+        // send mail with defined transport object
+        await transporter.sendMail({
+          from: '"Activa tu cuenta " <'+config.EMAIL_FROM+'>', // sender address
+          to:email , // list of receivers
+          subject: "Activa tu cuenta ✔", // Subject line
+          text: "Activa tu cuenta ✔", // plain text body
+          html: `
+          <h1>Activa tu cuenta haciendo clic en el enlace de abajo</h1>
+          <p>${config.CLIENT_URL}/api/auth/activation/${token}</p>
+          <hr />
+          <p>Este correo tiene informacion sensible, borrelo luego de activarlo</p>
+          <p>${config.CLIENT_URL}</p>
+      `, // html body
+        })
+
+       await transporter.verify(function (error, success) {
+          if (error) {
+            console.log(error);
+            return res.status(400).json({
+              success: false,
+              errors: err,
+            });
+          } else {
+            console.log(`Email de activacion enviado a ${email}`);
+            return res.json({
+              message: `Email de activacion enviado a ${email}`,
+            });
+          }
+        });
+/*
       const emailData = {
         from: process.env.EMAIL_FROM,
         to: email,
@@ -87,7 +135,7 @@ export const signUp = async (req, res) => {
             errors: err,
           });
         });
-
+*/
       //return res.status(200).json({ token, status: true, title: "Registro Successfully." });
     }
   } catch (error) {
@@ -135,7 +183,7 @@ export const activacion = async (req, res) => {
   const { token } = req.body;
 
   if (token) {
-    jwt.verify(token, process.env.JWT_ACCOUNT_ACTIVATION, async (err, decoded) => {
+    jwt.verify(token, config.JWT_ACCOUNT_ACTIVATION, async (err, decoded) => {
       if (err) {
         console.log('Activation error');
         return res.status(401).json({
