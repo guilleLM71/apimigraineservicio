@@ -98,6 +98,9 @@ export const editarpaciente =async(req, res) => {
         if (req.body.nombre) {
           new_paciente.nombre = req.body.nombre;
         }
+        if (req.body.nombre) {
+          new_paciente.diagnostico = req.body.diagnostico;
+        }
       
         new_paciente.save((err, data) => {
           if (err) {
